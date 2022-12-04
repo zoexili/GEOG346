@@ -1,0 +1,46 @@
+---
+title: "module1"
+author: "Li Xi"
+date: "2020-08-30"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{module1}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+```
+
+`lx346` is the package I am developing for geog 346 coursework.
+
+It currently has three functions, `my_number_checker`, which is executed as follows:
+
+```{r}
+library(lx346)
+my_number_checker(1)
+my_number_checker(10)
+my_number_checker(20)
+```
+
+`squirrel_function` is executed as follows:
+
+```{r}
+library(lx346)
+squirrel_function()
+```
+
+`fahrenheit2Celsius` is executed as follows:
+
+```{r}
+library(lx346)
+fahrenheit2Celsius(30)
+fahrenheit2Celsius(60)
+fahrenheit2Celsius(90)
+```
+
+I will be adding other functions and update this vignette as we go. 

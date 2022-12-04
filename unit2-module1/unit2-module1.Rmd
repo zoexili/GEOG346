@@ -1,0 +1,169 @@
+---
+title: "unit2-module1"
+author: "LI XI"
+date: "2020-10-11"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{module5}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+```
+
+# This module is working with spatial vector data. 
+
+**
+1.Read in the farmers_spatial.csv, districts.shp, and roads.shp datasets. Reduce the size of the farmers data by first selecting distinct observations by uuid, x, y, season, i.e. use distinct(uuid, x, y, season). After that convert it to an sf object. Reproject the farmers and districts data to Albers projection (using the CRS from roads), naming each farmers_alb and districts_alb. Ideally (worth an extra 0.5 points) you will do all the necessary steps to create farmers_alb and districts_alb in one pipeline.
+**
+```{r}
+library(geospaar)
+farmers <- read_csv(system.file("extdata/farmer_spatial.csv", package = "geospaar")) 
+farmers <- farmers %>% distinct(uuid, season, x, y) %>% st_as_sf(coords = c("x", "y"))
+farmers
+
+roads <- st_read(system.file("extdata/roads.shp", package = "geospaar"))
+roads
+districts <- st_read(system.file("extdata/districts.shp", package = "geospaar"))
+districts
+districts_alb <- st_transform(x = districts, crs = st_crs(roads))
+districts_alb
+
+st_crs(farmers) <- st_crs(4326)
+farmers_alb <- st_transform(x = farmers, crs = st_crs(roads))
+```
+
+**
+2. Create a plot using sf::plot that shows all three datasets on one map, with districts_alb in grey, with roads in red over that, and farmers_alb as a blue cross over that. Use the relevant chunk arguments to center the figure in the vignette html, and to have a height of 4 inches and a width of 6 inches. The figure should have 0 margins all around.
+**
+```{r, fig.width = 6, fig.height = 4, fig.align = "center"}
+par(mar = rep(0, 4))
+plot(districts_alb %>% st_geometry(), col = "grey")
+plot(roads %>% st_geometry(), col ="red", add = TRUE)
+plot(farmers_alb %>% st_geometry(), col = "blue", pch = "+", add = TRUE)
+```
+
+**
+3. Make the same plot above using ggplot and geom_sf. When adding farmers_alb to the plot, use pch = "+" and size = 3 as arguments to geom_sf. Add the function theme_bw() to the ggplot construction chain, to get rid of the grey background. Make the “fill” (rather than “color”) of districts_alb grey. Center the figure using chunk options and make the figure width 5 inches and height 6 inches.
+**
+```{r, fig.width = 5, fig.height = 6, fig.align = "center"}
+ggplot(districts_alb, fill = "grey") + theme_bw() + geom_sf() +
+  geom_sf(data = roads, col = "red") + 
+  geom_sf(data = farmers_alb, col = "blue", pch = "+", size = 3)
+
+```
+
+**
+4. Select from districts_alb the district representing the 50th percentile area, i.e. the median area, and save that district into a new object median_dist. Plot it in “khaki” on top of grey districts_alb. Give the plot a title “The median area district”. Same plot dimensions in the vignette html as for Task 2, but a leave a space of 1 at the top in the plot mar.
+**
+```{r, fig.width = 6, fig.height = 4, fig.align = "center"}
+tertiles <- function(x) quantile(x, probs = c(0, 0.5, 1))
+dist_tertiles <- districts_alb %>% mutate(area = as.numeric(st_area(.) / 10^6)) %>% mutate(acls = cut(area, breaks = tertiles(area), include.lowest = TRUE)) %>% group_by(acls) %>% summarize(median_area = median(area))
+dist_tertiles
+median_dist <- dist_tertiles[1, ]
+median_dist
+par(mar = c(0, 0, 1, 0)) # bottom, left, top, and right
+plot(districts_alb %>% st_geometry(), col = "grey")
+plot(median_dist %>% st_geometry(), col = "khaki", add = TRUE)
+title(main = "The median area distrcit")
+```
+
+**
+5. Convert the median_dist to its centroid point. Call it median_distp. filter the farmers_alb data for season 1, and then find the 20 closest season 1 farmers to median_distp. To do that, create the new object closest_20farmers by using mutate with st_distance to create a new variable length (convert it to numeric), and then arrange by variable length and slice out the top 20 observations. Plot districts_alb in grey, median_dist over that in khaki, median_distp as a solid purple circle, farmers_alb in blue, and closest_20farmers in red. Zero margins and width of 6 inches and height of 4 inches. 
+**
+```{r, fig.width = 6, fig.height = 4, fig.align = "center"}
+median_distp <- st_centroid(median_dist)
+
+closest20farmers <- farmers_alb %>% filter(season == 1) %>% mutate(distances = as.numeric(st_distance(. , median_distp))) %>% arrange(distances) %>% slice(1:20)
+
+par(mar = c(0, 0, 0, 0)) # bottom, left, top, and right
+plot(districts_alb %>% st_geometry(), col = "grey")
+plot(median_dist %>% st_geometry(), col = "khaki", add = TRUE)
+plot(median_distp %>% st_geometry(), col = "purple", pch = 20, add = TRUE)
+plot(farmers_alb %>% st_geometry(), col = "blue", add = TRUE)
+plot(closest20farmers %>% st_geometry(), col = "red", add = TRUE)
+
+```
+
+**
+6. Create a rectangular sf polygon called mypol using the x coordinates 30 and 31 (minimum and maximum) and y coordinates -10 and -11. Assign it crs = 4326 and transform it to Albers. Select from districts_alb the districts that intersect mypol, and plot in “grey40” over districts_alb in grey, and plot over that mypol without any fill but just a yellow border. Calculate the area in ha of mypol and report it in your vignette below this plot. Zero margins and width of 6 inches and height of 4 inches.
+**
+```{r, fig.width = 6, fig.height = 4, fig.align = "center"}
+mypol <- st_polygon(list(cbind(x = c(30, 30.5, 31, 30), y = c(-10, -10.5, -11, -10)))) %>% st_sfc %>% st_sf(crs = 4326)
+mypol
+mypol_alb <- mypol %>% st_transform(st_crs(roads))
+mypol_alb
+intersected <- st_intersection(districts_alb, mypol_alb)
+intersected
+
+par(mar = c(0, 0, 0, 0)) # bottom, left, top, and right
+plot(districts_alb %>% st_geometry(), col = "grey")
+plot(intersected %>% st_geometry(), col = "grey40", add = TRUE)
+plot(mypol_alb, border = "yellow", add = TRUE)
+
+area_mypol <- mypol %>% st_area() %>% units::set_units("ha")
+area_mypol
+
+```
+
+**
+7. Create mypol_dist_int from the intersection of mypol and districts_alb, recasting the intersected districts to multipolygons, and adding an area variable onto it that reports areas of intersections in hectares. Do all that in one pipeline. Plot mypol_dist_int in rainbow colors over districts_alb. Zero margins and width of 6 inches and height of 4 inches. Report the mean and median of interections in the vignette below the plot.
+**
+```{r, fig.width = 6, fig.height = 4, fig.align = "center"}
+mypol_dist_int <- st_intersection(mypol_alb, districts_alb) %>% st_cast() %>% mutate(area = as.numeric(units::set_units(st_area(.), "ha")))
+
+par(mar = c(0, 0, 0, 0)) # bottom, left, top, and right
+plot(districts_alb %>% st_geometry(), col = "grey")
+plot(mypol_dist_int %>% st_geometry(), col = rainbow(n = nrow(mypol_dist_int)), add = TRUE)
+```
+
+**
+8. Find the shortest and longest roads in Zambia, and place the selected roads into a new object (roads_extreme). To do this, you will need to arrange roads by length and then slice to get the 
+first and last observations (of course you need to first calculate length). Do that as one pipeline. Then calculate a 50 km buffer around those two roads (roads_extreme_buff). Plot roads_extreme_buff in blue over districts_alb in grey, and add roads_extreme on top of that as red lines (use lwd = 3 in the plot). Zero margins and width of 6 inches and height of 4 inches.
+
+**
+```{r, fig.width = 6, fig.height = 4, fig.align = "center"}
+roads_extreme <- roads %>% mutate(length = as.numeric(st_length(.))) %>% arrange(length) %>% slice(1, length(length))
+roads_extreme_buff <- roads_extreme %>% st_buffer(dist = 50000) 
+par(mar = c(0, 0, 0, 0))
+plot(districts_alb %>% st_geometry(), col = "grey")
+plot(roads_extreme_buff %>% st_geometry(), col = "blue", add = TRUE)
+plot(roads_extreme %>% st_geometry(), col = "red", lwd = 3, add = TRUE) 
+# lwd = line width
+```
+
+**
+9. Select a random sample of 10 points in the smallest object in roads_extreme_buff, and one of 50 in the largest object. Use a single call to st_sample to do that. Use a seed of 2. Plot those points as yellow solid points over the same map created in Task 8 above. Use the same dimensions.
+**
+
+```{r, fig.width = 6, fig.height = 4, fig.align = "center"}
+par(mar = c(0, 0, 0, 0))
+plot(districts_alb %>% st_geometry(), col = "grey")
+plot(roads_extreme_buff %>% st_geometry(), col = "blue", add = TRUE)
+plot(roads_extreme %>% st_geometry(), col = "red", lwd = 3, add = TRUE) 
+
+set.seed(2)
+roads_extreme_buff %>% st_sample(roads_extreme_buff[[3]][1], size = 10, exact = TRUE) %>% plot(col = "yellow", pch = 20, add = TRUE)
+roads_extreme_buff %>% st_sample(roads_extreme_buff[[3]][2], size = 50, exact = TRUE) %>% plot(col = "yellow", pch = 20, add = TRUE)
+```
+
+**
+10.Your final task is to intersect roads with the buffer of the longest road in roads_extreme_buff (roads_int). Plot the buffer of the longest road in blue over the districts in grey, and then roads_int as red lines. Use the same dimensions as the previous two plots. Report the total distance of intersected roads in km in the vignette below the plot.
+**
+```{r, fig.width = 6, fig.height = 4, fig.align = "center"}
+roads_int <- st_intersection(roads, roads_extreme_buff[[3]][2])
+
+par(mar = c(0, 0, 0, 0))
+plot(districts_alb %>% st_geometry(), col = "grey")
+plot(roads_extreme_buff[[3]][2] %>% st_geometry(), col = "blue", add = TRUE)
+plot(roads_int %>% st_geometry(), col = "red", add = TRUE) 
+
+sum(st_length(roads_int) %>% units::set_units("km"))
+
+```
+

@@ -1,0 +1,187 @@
+---
+title: "module3"
+author: "Li Xi"
+date: "2020-09-19"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{module3}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+```
+
+```{r setup}
+library(lx346)
+```
+
+# assignment 2
+## An integer vector of length 20, to be named v1, using the sample function to randomly select 20 values from 0 through 100, use the option “replace = TRUE” (which means that you can the same value randomly selected more than one time)
+```{r,error=TRUE}
+set.seed(1)
+v1 <- sample(x=1:100,size=20,replace=TRUE)
+v1
+```
+
+## A second integer vector (named v2), also of length 20, but selecting 20 values from the range 1:10.
+```{r,error=TRUE}
+set.seed(1)
+v2 <- sample(x=1:10,20,replace=TRUE)
+v2
+```
+
+## A numeric vector of length 20 (named v3), using the runif function with the minimum set to 0 and the maximum to 1.
+```{r,error=TRUE}
+v3 <- runif(n=20,0,1)
+v3
+```
+
+## A character vector of length 20 (named v4), using randomly selected values from the built-in dataset LETTERS. You will use v2 to select the values out of LETTERS (this means that you are using v2 as an index).
+```{r,error=TRUE}
+v4 <- sample(x=LETTERS[v2],size = 20)
+v4
+```
+
+# Create a matrix m1 from v1 and v2, by binding the two vectors together as columns. Create another (m2) from v2 and v3, again by binding columns. Create a third (m3) by binding v3 and v4.
+```{r,error=TRUE}
+m1 <- cbind(v1,v2)
+m2 <- cbind(v2,v3)
+m3 <- cbind(v3,v4)
+m1
+m2
+m3
+```
+
+# Create a data.frame (named DF) by bindings the columns of v1, v2, v3, and v4.
+```{r,error=TRUE}
+DF <- data.frame(v1,v2,v3,v4)
+DF
+```
+
+# Question: why shouldn’t you use the name “df” to name this object?
+```{r,error=TRUE}
+print("because df can also refer to degrees of freedom. To avoid further confusion when doing statistical analysis, we should not name data frame as df or DF. Another reason could be that df is a short abbreviation of data frame. ")
+```
+
+# Change the column names of DF to “a”, “b”, “c”, and “grp”.
+```{r,error=TRUE}
+names(DF) <- paste0(c("a","b","c","grp"))
+DF
+```
+
+# Question: why is it okay to rename a column in DF “c”, but not to rename v3 that name?
+```{r,error=TRUE}
+print("In data frame, 'c' we just used to rename to d is a column.v3 is a numeric vector which often uses c function to create or add elements to itself. We should not use 'c' to name this vector, but probably we can use 'c' to name its column or row name.")
+```
+
+# Look at the str of DF. What kind of data type is “grp”? What are two ways you can change it from a factor to a character? (Hint: one is when you create it, one is after you have created it. Both answers are available in the vignette)
+```{r,error=TRUE}
+DF <- data.frame(v1,v2,v3,v4,stringsAsFactors = TRUE)
+names(DF) <- paste0(c("a","b","c","grp"))
+DF
+str(DF)
+print("the data type of grp column is Factor")
+DF$grp <- as.character(DF$grp)
+
+# another way is:
+DF <- data.frame(v1,v2,v3,v4,stringsAsFactors = FALSE) 
+# Or just simply
+DF <- data.frame(v1,v2,v3,v4) 
+```
+
+# Use mycalc to sum and divide the following pairs of objects:
+v1, v2
+v2, v3
+v1, v3
+m1, m1
+m1, m2
+m2, m3
+Capture the output of each operation in objects d1 through d6 for the divisions, and s1 through s6 for the sums.
+```{r,error=TRUE}
+dat_list <- list(data.frame(v1,v2),
+                  data.frame(v2,v3),
+                  data.frame(v1,v3),
+                  data.frame(m1,m1),
+                  data.frame(m1,m2),
+                  data.frame(m2,m3))
+dat_list
+s <- list(1,2,3,4,5,6)
+for (i in 1:6) {
+  a <- as.numeric(unlist(dat_list[[i]][1]))
+  b <- as.numeric(unlist(dat_list[[i]][2]))
+  s[[i]] <- mycalc(a,b,"sum")
+}
+names(s) <- paste0("s",1:6)
+s
+
+d <- list(1,2,3,4,5,6)
+for (i in 1:6) {
+  a <- as.numeric(unlist(dat_list[[i]][1]))
+  b <- as.numeric(unlist(dat_list[[i]][2]))
+  d[[i]] <- mycalc(a,b,"divide")
+}
+names(d) <- paste0("d",1:6)
+d
+```
+
+# Using mycalc with DF:
+Multiply row1, column1 by row1, column2
+Multiply rows 1-10, column 1-3 by rows1-10, columns 1-3
+Divide the values in columns “a” and “b” by the values in column “c” and of DF corresponding to “grp” values “E”. In selecting the columns, use their names, rather than their index numbers, to select them
+
+```{r,error=TRUE}
+# make sure DF has a,b,c and grp as names.
+DF <- data.frame(v1,v2,v3,v4) 
+names(DF) <- paste0(c("a","b","c","grp"))
+mycalc(DF[1,1],DF[1,2],"multiply")
+mycalc(DF[1:10,1:3],DF[1:10,1:3],"multiply")
+mycalc(DF["a"] + DF["b"],DF["c"]+DF[DF["grp"]=="E",3],"divide")
+```
+
+# Repeat the last of the aforementioned calculations, but this time do not use mycalc. Simply do it using the two DF subsets with the / operator
+```{r,error=TRUE}
+DF[1,1] * DF[1,2]
+DF[1:10,1:3]^2
+(DF["a"] + DF["b"])/(DF["c"]+DF[DF["grp"]=="E",3])
+```
+
+# Demonstrate the use of *apply:
+## Combine v1, m1, and m2 into a list l
+```{r,error=TRUE}
+l <- list(v1,m1,m2)
+l
+```
+
+## Write an lapply that applies sum to l. This one does not need an anonymous function
+```{r,error=TRUE}
+l_sum <- lapply(l,sum)
+l_sum
+```
+
+## Now write an lapply that iterates over the elements of l, and uses your myfunc to multiply each element of l by v2.
+Hints:
+You will need to use an anonymous function (function(x))
+The interior of your function (i.e. the part between ({}) will look like this: l[[x]] * v2
+```{r,error=TRUE}
+l <- lapply(1:length(l),function(x){
+  l <- l[[x]]* v2
+})
+l
+```
+
+# Do the same but with sapply
+```{r,error=TRUE}
+l <- list(v1,m1,m2)
+l <- sapply(1:length(l),function(x){
+  l <- l[[x]]* v2
+})
+l
+```
+
+
+
